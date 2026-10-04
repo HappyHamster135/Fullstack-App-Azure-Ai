@@ -24,6 +24,7 @@ public class ForecastService(AppDbContext db, TimeProvider timeProvider) : IFore
         var lastDay = firstMonth.AddMonths(months).AddDays(-1);
 
         var subscriptions = await db.Subscriptions
+            .AsNoTracking()
             .Include(s => s.Category)
             .Where(s => s.UserId == userId && s.IsActive && s.NextPaymentDate <= lastDay)
             .ToListAsync();

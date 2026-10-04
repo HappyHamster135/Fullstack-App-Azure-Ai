@@ -45,18 +45,23 @@ public class Subscription
     // Betalningsdatumen mellan from och to (inklusive), utifrån nästa betalning och intervallet.
     // Varje datum räknas från nästa betalning och inte från datumet före. Annars skulle en betalning
     // den 31:a hamna på den 28:e efter februari och aldrig komma tillbaka till den 31:a.
+    // Loopen börjar vid första betalningen som kan ligga på eller efter from i stället för att stega från
+    // NextPaymentDate. Datumet kommer från användaren och saknar nedre gräns, så arbetet får inte växa med dess ålder.
     public IEnumerable<DateOnly> GetPaymentDates(DateOnly from, DateOnly to)
     {
-        var date = NextPaymentDate;
-
-        for (var count = 1; date <= to; count++)
+        for (var count = BillingInterval.IntervalsBefore(NextPaymentDate, from); ; count++)
         {
+            var date = BillingInterval.AddIntervals(NextPaymentDate, count);
+
+            if (date > to)
+            {
+                yield break;
+            }
+
             if (date >= from)
             {
                 yield return date;
             }
-
-            date = BillingInterval.AddIntervals(NextPaymentDate, count);
         }
     }
 }

@@ -22,4 +22,25 @@ public static class BillingIntervalExtensions
         BillingInterval.Yearly => date.AddYears(count),
         _ => throw new ArgumentOutOfRangeException(nameof(interval)),
     };
+
+    // Hur många hela intervall som kan hoppas över från start utan att passera en betalning på eller efter date.
+    // Betalningarna före det returnerade antalet ligger alltid före date, så ingen betalning missas.
+    public static int IntervalsBefore(this BillingInterval interval, DateOnly start, DateOnly date)
+    {
+        if (date <= start)
+        {
+            return 0;
+        }
+
+        var months = (date.Year - start.Year) * 12 + date.Month - start.Month;
+
+        return interval switch
+        {
+            BillingInterval.Weekly => (date.DayNumber - start.DayNumber) / 7,
+            BillingInterval.Monthly => months,
+            BillingInterval.Quarterly => months / 3,
+            BillingInterval.Yearly => months / 12,
+            _ => throw new ArgumentOutOfRangeException(nameof(interval)),
+        };
+    }
 }
