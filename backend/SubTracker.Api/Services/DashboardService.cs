@@ -7,7 +7,7 @@ using SubTracker.Api.Mappings;
 
 namespace SubTracker.Api.Services;
 
-public class DashboardService(AppDbContext db) : IDashboardService
+public class DashboardService(AppDbContext db, TimeProvider timeProvider) : IDashboardService
 {
     private const int UpcomingDays = 30;
     private const int HistoryMonths = 6;
@@ -19,7 +19,7 @@ public class DashboardService(AppDbContext db) : IDashboardService
 
     public async Task<DashboardResponse> GetAsync(string userId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = timeProvider.GetToday();
 
         var activeSubscriptions = await db.Subscriptions
             .Include(s => s.Category)

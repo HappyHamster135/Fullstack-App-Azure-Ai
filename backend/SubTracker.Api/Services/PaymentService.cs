@@ -6,7 +6,7 @@ using SubTracker.Api.Mappings;
 
 namespace SubTracker.Api.Services;
 
-public class PaymentService(AppDbContext db) : IPaymentService
+public class PaymentService(AppDbContext db, TimeProvider timeProvider) : IPaymentService
 {
     private static readonly ServiceError SubscriptionNotFound =
         ServiceError.NotFound("Prenumerationen finns inte.");
@@ -51,7 +51,7 @@ public class PaymentService(AppDbContext db) : IPaymentService
 
         var payment = subscription.RegisterPayment(
             request.Amount ?? subscription.Price,
-            request.PaidOn ?? DateOnly.FromDateTime(DateTime.UtcNow));
+            request.PaidOn ?? timeProvider.GetToday());
 
         await db.SaveChangesAsync();
 

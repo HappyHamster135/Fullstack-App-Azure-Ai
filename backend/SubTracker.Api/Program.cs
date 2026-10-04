@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using SubTracker.Api.Auth;
+using SubTracker.Api.Common;
 using SubTracker.Api.Data;
 using SubTracker.Api.Entities;
 using SubTracker.Api.OpenApi;
@@ -91,7 +92,9 @@ builder.Services.AddCors(options =>
 //-----Services
 //-------------
 
-builder.Services.AddSingleton(TimeProvider.System);
+var swedishTime = new SwedishTimeProvider();
+
+builder.Services.AddSingleton<TimeProvider>(swedishTime);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -119,6 +122,11 @@ var app = builder.Build();
 if (allowedOrigins.Length == 0)
 {
     app.Logger.LogWarning("Cors:AllowedOrigins är tom – ingen frontend kan anropa API:t.");
+}
+
+if (swedishTime.UsesFallbackZone)
+{
+    app.Logger.LogWarning("Tidszonen Europe/Stockholm saknas på servern – dagens datum räknas i UTC i stället för svensk tid.");
 }
 
 // Migrationerna är skrivna för SQL Server. Integrationstesterna kör mot SQLite och stänger därför av steget.

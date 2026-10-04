@@ -125,6 +125,53 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
     }
 
     [Fact]
+    public async Task Forecast_UsesSwedishTimeForToday_JustAfterMidnightInWinter()
+    {
+        // 23:30 UTC den 31 januari är 00:30 den 1 februari i Stockholm. En svensk användare ser redan februari.
+        factory.Clock.SetUtc(new DateTimeOffset(2027, 1, 31, 23, 30, 0, TimeSpan.Zero));
+        var user = await ApiTestUser.RegisterAsync(factory);
+        await user.AddSubscriptionAsync("Igår", 100m, BillingInterval.Monthly, D(2027, 1, 31));
+        await user.AddSubscriptionAsync("Idag", 100m, BillingInterval.Monthly, D(2027, 2, 1));
+
+        var forecast = await GetForecastAsync(user);
+
+        Assert.Equal((2027, 2), (forecast.Months[0].Year, forecast.Months[0].Month));
+        Assert.Equal((2027, 7), (forecast.Months[5].Year, forecast.Months[5].Month));
+        Assert.Equal(
+            [D(2027, 2, 1), D(2027, 3, 1), D(2027, 4, 1), D(2027, 5, 1), D(2027, 6, 1), D(2027, 7, 1)],
+            PaymentDates(forecast, "Idag"));
+        Assert.Equal(
+            [D(2027, 2, 28), D(2027, 3, 31), D(2027, 4, 30), D(2027, 5, 31), D(2027, 6, 30), D(2027, 7, 31)],
+            PaymentDates(forecast, "Igår"));
+    }
+
+    [Fact]
+    public async Task Forecast_UsesSwedishSummerTime()
+    {
+        // Sommartid är UTC+2: 22:30 UTC den 30 juni är 00:30 den 1 juli i Stockholm.
+        factory.Clock.SetUtc(new DateTimeOffset(2027, 6, 30, 22, 30, 0, TimeSpan.Zero));
+        var user = await ApiTestUser.RegisterAsync(factory);
+
+        var forecast = await GetForecastAsync(user);
+
+        Assert.Equal((2027, 7), (forecast.Months[0].Year, forecast.Months[0].Month));
+    }
+
+    [Fact]
+    public async Task Forecast_StillShowsTheOldMonth_BeforeSwedishMidnight()
+    {
+        // 22:30 UTC den 31 januari är 23:30 i Stockholm, alltså fortfarande januari.
+        factory.Clock.SetUtc(new DateTimeOffset(2027, 1, 31, 22, 30, 0, TimeSpan.Zero));
+        var user = await ApiTestUser.RegisterAsync(factory);
+        await user.AddSubscriptionAsync("Idag", 100m, BillingInterval.Monthly, D(2027, 1, 31));
+
+        var forecast = await GetForecastAsync(user);
+
+        Assert.Equal((2027, 1), (forecast.Months[0].Year, forecast.Months[0].Month));
+        Assert.Equal(D(2027, 1, 31), PaymentDates(forecast, "Idag")[0]);
+    }
+
+    [Fact]
     public async Task Forecast_CountsPaymentsFromTodayOnly_ButKeepsTheBillingCycle()
     {
         var user = await RegisterOnAsync(2027, 1, 15);

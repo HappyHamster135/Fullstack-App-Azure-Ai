@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SubTracker.Api.Common;
 using SubTracker.Api.Data;
 using SubTracker.Api.Dtos.Forecast;
 using SubTracker.Api.Mappings;
@@ -19,7 +20,7 @@ public class ForecastService(AppDbContext db, TimeProvider timeProvider) : IFore
 
         // Perioden är hela kalendermånader från och med innevarande månad, men bara betalningar
         // från och med idag räknas med. Förfallna betalningar (före idag) ingår alltså inte.
-        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var today = timeProvider.GetToday();
         var firstMonth = FirstDayOfMonth(today);
         var lastDay = firstMonth.AddMonths(months).AddDays(-1);
 
