@@ -119,8 +119,10 @@ if (allowedOrigins.Length == 0)
     app.Logger.LogWarning("Cors:AllowedOrigins är tom – ingen frontend kan anropa API:t.");
 }
 
-using (var scope = app.Services.CreateScope())
+// Migrationerna är skrivna för SQL Server. Integrationstesterna kör mot SQLite och stänger därför av steget.
+if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
     try
@@ -156,3 +158,6 @@ app.MapHealthChecks("/api/health");
 app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
 app.Run();
+
+// Gör Program synlig för WebApplicationFactory i testprojektet.
+public partial class Program;
