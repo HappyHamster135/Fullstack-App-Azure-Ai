@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Card, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { getErrorMessage } from "../api/errors.js";
 import { forecastApi } from "../api/ForecastApi.js";
-import { formatCurrency } from "../utils/format.js";
+import { formatCurrency, formatMonthYear } from "../utils/format.js";
 import ForecastChart from "./charts/ForecastChart.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
 
@@ -66,6 +66,9 @@ function ForecastCard() {
   } else if (!forecast) {
     content = <LoadingSpinner />;
   } else {
+    // Perioden är hela kalendermånader och den första räknas bara från idag, så slutet anges i stället för "N månader".
+    const lastMonth = forecast.months.at(-1);
+
     content = (
       <div className={isLoading ? "opacity-50" : undefined}>
         <p className="mb-3">
@@ -73,7 +76,7 @@ function ForecastCard() {
             {formatCurrency(forecast.total)}
           </span>{" "}
           <span className="text-body-secondary">
-            de kommande {forecast.months.length} månaderna
+            till och med {formatMonthYear(lastMonth.year, lastMonth.month)}
           </span>
         </p>
 
