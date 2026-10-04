@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SubTracker.Api.Common;
 using SubTracker.Api.Data;
 using SubTracker.Api.Dtos.Forecast;
 using SubTracker.Api.Mappings;
@@ -8,26 +7,15 @@ namespace SubTracker.Api.Services;
 
 public class ForecastService(AppDbContext db, TimeProvider timeProvider) : IForecastService
 {
-    private const int MinMonths = 1;
-    private const int MaxMonths = 24;
-
-    private static readonly ServiceError InvalidMonths = ServiceError.Validation(
-        new Dictionary<string, string[]>
-        {
-            ["months"] = [$"Antal månader måste vara mellan {MinMonths} och {MaxMonths}."],
-        });
-
-
     //-------------
     //-----Forecast
     //-------------
 
-    public async Task<ServiceResult<ForecastResponse>> GetAsync(string userId, int months)
+    public async Task<ForecastResponse> GetAsync(string userId, int months)
     {
-        if (months is < MinMonths or > MaxMonths)
-        {
-            return ServiceResult<ForecastResponse>.Failure(InvalidMonths);
-        }
+        // Användarens indata valideras redan av ForecastRequest (400). Här skyddas beräkningen bara mot felanrop från annan kod.
+        ArgumentOutOfRangeException.ThrowIfLessThan(months, ForecastRequest.MinMonths);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(months, ForecastRequest.MaxMonths);
 
         // Perioden är hela kalendermånader från och med innevarande månad, men bara betalningar
         // från och med idag räknas med. Förfallna betalningar (före idag) ingår alltså inte.
@@ -51,8 +39,7 @@ public class ForecastService(AppDbContext db, TimeProvider timeProvider) : IFore
             .Select(month => CreateMonth(month, paymentsByMonth[month].ToList()))
             .ToList();
 
-        return ServiceResult<ForecastResponse>.Success(
-            new ForecastResponse(forecastMonths.Sum(m => m.Total), forecastMonths));
+        return new ForecastResponse(forecastMonths.Sum(m => m.Total), forecastMonths);
     }
 
 

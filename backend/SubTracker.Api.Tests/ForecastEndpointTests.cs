@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using SubTracker.Api.Dtos.Forecast;
 using SubTracker.Api.Entities;
 using SubTracker.Api.Tests.Infrastructure;
@@ -93,16 +94,34 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(25)]
-    [InlineData(-1)]
-    public async Task Forecast_RejectsMonthsOutsideOneToTwentyFour(int months)
+    [InlineData("0")]
+    [InlineData("25")]
+    [InlineData("-1")]
+    public async Task Forecast_RejectsMonthsOutsideOneToTwentyFour_WithTheProjectsErrorFormat(string months)
+    {
+        var user = await RegisterOnAsync(2027, 1, 15);
+
+        var response = await user.Client.GetAsync($"/api/forecast?months={months}");
+
+        // Samma format som övriga DTO-valideringar: nyckeln är egenskapens namn (PascalCase) och texten är på svenska.
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        Assert.Equal(["Antal månader måste vara mellan 1 och 24."], problem!.Errors["Months"]);
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("7.5")]
+    [InlineData("")]
+    public async Task Forecast_RejectsNonNumericMonths(string months)
     {
         var user = await RegisterOnAsync(2027, 1, 15);
 
         var response = await user.Client.GetAsync($"/api/forecast?months={months}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        Assert.Contains("Months", problem!.Errors.Keys);
     }
 
     [Fact]
