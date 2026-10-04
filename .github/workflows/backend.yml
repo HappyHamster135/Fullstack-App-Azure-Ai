@@ -18,6 +18,7 @@ permissions:
 
 env:
   PROJECT_PATH: backend/SubTracker.Api/SubTracker.Api.csproj
+  TEST_PROJECT_PATH: backend/SubTracker.Api.Tests/SubTracker.Api.Tests.csproj
 
 jobs:
   build-and-deploy:
@@ -39,6 +40,15 @@ jobs:
 
       - name: Build
         run: dotnet build ${{ env.PROJECT_PATH }} --configuration Release --no-restore
+
+
+      #---------------
+      #-----Test
+      #---------------
+
+      # Ett rött test stoppar jobbet, så publicering och deploy nedan körs aldrig med trasig kod.
+      - name: Test
+        run: dotnet test ${{ env.TEST_PROJECT_PATH }} --configuration Release
 
       - name: Publish
         run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --no-build --output ./publish

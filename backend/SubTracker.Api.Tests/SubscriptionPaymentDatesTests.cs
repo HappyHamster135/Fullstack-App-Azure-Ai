@@ -15,25 +15,48 @@ public class SubscriptionPaymentDatesTests
         new() { BillingInterval = interval, NextPaymentDate = next };
 
     /// <summary>
-    /// Referensimplementation: AI-förslagets ursprungliga loop, som stegar från nästa betalningsdatum.
-    /// Den är verifierad mot en oberoende beräkning i Python (260 prenumerationer, 0 avvikelser).
+    /// Referensimplementation med egen kalenderaritmetik. Den anropar varken <c>AddIntervals</c> eller
+    /// <c>DateOnly.AddMonths</c>, så ett fel i någon av dem kan inte gömma sig i både koden och referensen
+    /// (AI-granskaren visade att en tidigare referens återanvände <c>AddIntervals</c>).
+    /// Den stegar från nästa betalningsdatum, som AI-förslagets ursprungliga loop. Samma beräkning är också
+    /// kontrollerad mot ett oberoende Python-skript: se docs/ai/verifiering/.
     /// </summary>
     private static List<DateOnly> Reference(Subscription subscription, DateOnly from, DateOnly to)
     {
         var dates = new List<DateOnly>();
-        var date = subscription.NextPaymentDate;
 
-        for (var count = 1; date <= to; count++)
+        for (var count = 0; ; count++)
         {
+            var date = Occurrence(subscription.NextPaymentDate, subscription.BillingInterval, count);
+
+            if (date > to)
+            {
+                return dates;
+            }
+
             if (date >= from)
             {
                 dates.Add(date);
             }
-
-            date = subscription.BillingInterval.AddIntervals(subscription.NextPaymentDate, count);
         }
+    }
 
-        return dates;
+    private static DateOnly Occurrence(DateOnly anchor, BillingInterval interval, int count) => interval switch
+    {
+        BillingInterval.Weekly => DateOnly.FromDayNumber(anchor.DayNumber + 7 * count),
+        BillingInterval.Monthly => AddMonthsKeepingTheDay(anchor, count),
+        BillingInterval.Quarterly => AddMonthsKeepingTheDay(anchor, 3 * count),
+        _ => AddMonthsKeepingTheDay(anchor, 12 * count),
+    };
+
+    // Samma dag i månaden, men aldrig längre än månadens sista dag (31 jan + 1 månad = 28 eller 29 feb).
+    private static DateOnly AddMonthsKeepingTheDay(DateOnly anchor, int months)
+    {
+        var monthIndex = anchor.Year * 12 + (anchor.Month - 1) + months;
+        var year = monthIndex / 12;
+        var month = monthIndex % 12 + 1;
+
+        return new DateOnly(year, month, Math.Min(anchor.Day, DateTime.DaysInMonth(year, month)));
     }
 
     //-----------------

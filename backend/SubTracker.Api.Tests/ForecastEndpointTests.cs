@@ -218,6 +218,19 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
     }
 
     [Fact]
+    public async Task Forecast_IncludesAPaymentOnTheLastDayOfThePeriod()
+    {
+        // Gränsfall som AI-granskaren hittade: databasfiltret ska behålla en prenumeration vars nästa betalning
+        // är exakt periodens sista dag.
+        var user = await RegisterOnAsync(2027, 1, 15);
+        await user.AddSubscriptionAsync("Sista dagen", 100m, BillingInterval.Monthly, D(2027, 6, 30));
+
+        var forecast = await GetForecastAsync(user, 6);
+
+        Assert.Equal([D(2027, 6, 30)], PaymentDates(forecast, "Sista dagen"));
+    }
+
+    [Fact]
     public async Task Forecast_IgnoresInactiveSubscriptions()
     {
         var user = await RegisterOnAsync(2027, 1, 15);
@@ -252,13 +265,32 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
             first =>
             {
                 Assert.Equal(streaming.Id, first.Category.Id);
+                Assert.Equal(streaming.Name, first.Category.Name);
+                Assert.Equal(streaming.Color, first.Category.Color);
                 Assert.Equal(130m, first.Total);
             },
             second =>
             {
                 Assert.Equal(music.Id, second.Category.Id);
+                Assert.Equal(music.Name, second.Category.Name);
+                Assert.Equal(music.Color, second.Category.Color);
                 Assert.Equal(100m, second.Total);
             });
+    }
+
+    [Fact]
+    public async Task Forecast_OrdersCategoriesWithEqualTotalsByName()
+    {
+        var user = await RegisterOnAsync(2027, 1, 15);
+        var streaming = user.Categories.Single(c => c.Name == "Streaming");
+        var music = user.Categories.Single(c => c.Name == "Musik");
+        await user.AddSubscriptionAsync("A", 50m, BillingInterval.Monthly, D(2027, 2, 5), categoryId: streaming.Id);
+        await user.AddSubscriptionAsync("B", 50m, BillingInterval.Monthly, D(2027, 2, 6), categoryId: music.Id);
+
+        var february = (await GetForecastAsync(user, 2)).Months[1];
+
+        // Streaming skapas före Musik och har därför lägre id, så namnet (inte id) måste avgöra ordningen.
+        Assert.Equal(["Musik", "Streaming"], february.CostByCategory.Select(c => c.Category.Name));
     }
 
     [Fact]
@@ -278,7 +310,9 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
     public async Task Forecast_JsonShape_MatchesWhatTheFrontendReads()
     {
         var user = await RegisterOnAsync(2027, 1, 15);
-        await user.AddSubscriptionAsync("Netflix", 99.5m, BillingInterval.Monthly, D(2027, 1, 20));
+        var category = user.Categories[0];
+        var subscription = await user.AddSubscriptionAsync(
+            "Netflix", 99.5m, BillingInterval.Monthly, D(2027, 1, 20), categoryId: category.Id);
 
         var json = await user.Client.GetStringAsync("/api/forecast?months=1");
 
@@ -293,13 +327,15 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
 
         var byCategory = month.GetProperty("costByCategory")[0];
         Assert.Equal(99.5m, byCategory.GetProperty("total").GetDecimal());
-        Assert.True(byCategory.GetProperty("category").TryGetProperty("name", out _));
-        Assert.True(byCategory.GetProperty("category").TryGetProperty("color", out _));
+        Assert.Equal(category.Id, byCategory.GetProperty("category").GetProperty("id").GetInt32());
+        Assert.Equal(category.Name, byCategory.GetProperty("category").GetProperty("name").GetString());
+        Assert.Equal(category.Color, byCategory.GetProperty("category").GetProperty("color").GetString());
 
         var payment = month.GetProperty("payments")[0];
+        Assert.Equal(subscription.Id, payment.GetProperty("subscriptionId").GetInt32());
         Assert.Equal("Netflix", payment.GetProperty("name").GetString());
         Assert.Equal(99.5m, payment.GetProperty("amount").GetDecimal());
         Assert.Equal("2027-01-20", payment.GetProperty("date").GetString());
-        Assert.True(payment.TryGetProperty("subscriptionId", out _));
+        Assert.Equal(category.Name, payment.GetProperty("category").GetProperty("name").GetString());
     }
 }
