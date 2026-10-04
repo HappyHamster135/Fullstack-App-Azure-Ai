@@ -13,6 +13,11 @@ const dateFormatter = new Intl.DateTimeFormat("sv-SE", {
 
 const monthFormatter = new Intl.DateTimeFormat("sv-SE", { month: "short" });
 
+const monthYearFormatter = new Intl.DateTimeFormat("sv-SE", {
+  month: "long",
+  year: "numeric",
+});
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 //-----------
@@ -29,6 +34,10 @@ export function formatDate(isoDate) {
 
 export function formatMonth(year, month) {
   return monthFormatter.format(new Date(year, month - 1, 1));
+}
+
+export function formatMonthYear(year, month) {
+  return monthYearFormatter.format(new Date(year, month - 1, 1));
 }
 
 //----------

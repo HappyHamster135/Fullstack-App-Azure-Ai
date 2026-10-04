@@ -6,6 +6,7 @@ import { getErrorMessage } from "../api/errors.js";
 import CategoryCostChart from "../components/charts/CategoryCostChart.jsx";
 import PaymentsChart from "../components/charts/PaymentsChart.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import ForecastCard from "../components/ForecastCard.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import StatCard from "../components/StatCard.jsx";
 import UpcomingPayments from "../components/UpcomingPayments.jsx";
@@ -83,6 +84,10 @@ function DashboardPage() {
               <UpcomingPayments payments={summary.upcomingPayments} />
             </Col>
           </Row>
+
+          <div className="mb-3">
+            <ForecastCard />
+          </div>
 
           <Card className="shadow-sm">
             <Card.Body>
