@@ -58,14 +58,15 @@ public sealed class ApiTestUser
         BillingInterval interval,
         DateOnly nextPaymentDate,
         bool isActive = true,
-        int? categoryId = null)
+        int? categoryId = null,
+        DateOnly? startDate = null)
     {
         var request = new SubscriptionRequest
         {
             Name = name,
             Price = price,
             BillingInterval = interval,
-            StartDate = nextPaymentDate.AddYears(-1),
+            StartDate = startDate ?? nextPaymentDate.AddYears(-1),
             NextPaymentDate = nextPaymentDate,
             IsActive = isActive,
             CategoryId = categoryId ?? Categories[0].Id,

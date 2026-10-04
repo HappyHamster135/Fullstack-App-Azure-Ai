@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using SubTracker.Api.Data;
 
@@ -17,6 +18,9 @@ public class ApiFactory : WebApplicationFactory<Program>
 {
     // Databasen i minnet finns bara så länge anslutningen är öppen.
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
+
+    /// <summary>Klockan som API:t ser. Tester som beror på datum sätter den själva i början av testet.</summary>
+    public TestClock Clock { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -39,6 +43,9 @@ public class ApiFactory : WebApplicationFactory<Program>
             }
 
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
+
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(Clock);
         });
     }
 

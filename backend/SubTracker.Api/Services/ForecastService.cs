@@ -6,7 +6,7 @@ using SubTracker.Api.Mappings;
 
 namespace SubTracker.Api.Services;
 
-public class ForecastService(AppDbContext db) : IForecastService
+public class ForecastService(AppDbContext db, TimeProvider timeProvider) : IForecastService
 {
     private const int MinMonths = 1;
     private const int MaxMonths = 24;
@@ -31,7 +31,7 @@ public class ForecastService(AppDbContext db) : IForecastService
 
         // Perioden är hela kalendermånader från och med innevarande månad, men bara betalningar
         // från och med idag räknas med. Förfallna betalningar (före idag) ingår alltså inte.
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         var firstMonth = FirstDayOfMonth(today);
         var lastDay = firstMonth.AddMonths(months).AddDays(-1);
 
