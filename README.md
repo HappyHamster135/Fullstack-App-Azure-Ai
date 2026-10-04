@@ -159,6 +159,7 @@ Alla endpoints nedan kräver inloggning (401 utan token) och rör bara den inlog
 | `PUT /api/categories/{id}` | Uppdatera | 200, 400, 404, 409 |
 | `DELETE /api/categories/{id}` | Ta bort – nekas om kategorin används | 204, 404, 409 |
 | `GET /api/dashboard` | Sammanställning: total kostnad per månad/år, kostnad per kategori, betalningar inom 30 dagar och betalt per månad (senaste sex) | 200 |
+| `GET /api/forecast?months=N` | Prognos över kommande betalningar för aktiva prenumerationer: total för perioden samt per månad summa, kostnad per kategori och enskilda betalningar. `N` är 1–24 hela kalendermånader från och med innevarande månad (standard 6). Datumen räknas från nästa betalningsdatum och intervall, och bara betalningar från och med idag ingår. | 200, 400 |
 
 ## CI/CD
 

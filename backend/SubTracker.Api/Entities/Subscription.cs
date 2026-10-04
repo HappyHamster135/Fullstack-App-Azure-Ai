@@ -41,4 +41,22 @@ public class Subscription
 
         return payment;
     }
+
+    // Betalningsdatumen mellan from och to (inklusive), utifrån nästa betalning och intervallet.
+    // Varje datum räknas från nästa betalning och inte från datumet före. Annars skulle en betalning
+    // den 31:a hamna på den 28:e efter februari och aldrig komma tillbaka till den 31:a.
+    public IEnumerable<DateOnly> GetPaymentDates(DateOnly from, DateOnly to)
+    {
+        var date = NextPaymentDate;
+
+        for (var count = 1; date <= to; count++)
+        {
+            if (date >= from)
+            {
+                yield return date;
+            }
+
+            date = BillingInterval.AddIntervals(NextPaymentDate, count);
+        }
+    }
 }

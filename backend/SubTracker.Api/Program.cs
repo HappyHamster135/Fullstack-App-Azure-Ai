@@ -97,6 +97,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IForecastService, ForecastService>();
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
