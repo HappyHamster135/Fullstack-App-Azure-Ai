@@ -7,6 +7,7 @@ import {
   XAxis,
 } from "recharts";
 import {
+  formatCompactCurrency,
   formatCurrency,
   formatMonth,
   formatMonthYear,
@@ -14,7 +15,17 @@ import {
 import CategoryLabel from "../CategoryLabel.jsx";
 import { CHART_THEME } from "./chartTheme.js";
 
-const MAX_MONTHS_WITH_LABELS_ON_SMALL_SCREENS = 6;
+// Värdeetiketterna ovanför staplarna får bara plats när staplarna är tillräckligt breda. Uppmätt i webbläsare
+// krockade sex fulla etiketter ("3 432 kr") på en telefon på 360 px, så där visas kortare belopp ("3,4 tkr").
+// Tolv staplar är för smala för det: de får etiketter först från lg. Beloppen finns alltid kvar i tooltipen.
+const fullLabel = (value) => (value > 0 ? formatCurrency(value) : "");
+const compactLabel = (value) => (value > 0 ? formatCompactCurrency(value) : "");
+
+function fullLabelClassName(monthCount) {
+  if (monthCount <= 3) return undefined;
+
+  return monthCount <= 6 ? "d-none d-sm-block" : "d-none d-lg-block";
+}
 
 //------------
 //-----Tooltip
@@ -60,7 +71,7 @@ function ForecastChart({ data }) {
     label: formatMonth(item.year, item.month),
     title: formatMonthYear(item.year, item.month),
     total: item.total,
-    categories: item.costByCategory,
+    categories: item.costByCategory ?? [],
   }));
 
   if (rows.every((row) => row.total === 0)) {
@@ -71,15 +82,15 @@ function ForecastChart({ data }) {
     );
   }
 
-  // Med många månader får beloppen inte plats på små skärmar. Då visas de bara i tooltipen.
-  const labelClassName =
-    rows.length > MAX_MONTHS_WITH_LABELS_ON_SMALL_SCREENS
-      ? "d-none d-lg-block"
-      : undefined;
+  const showCompactLabels = rows.length > 3 && rows.length <= 6;
 
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={rows} margin={{ top: 28, right: 8, bottom: 0, left: 8 }}>
+      <BarChart
+        data={rows}
+        title="Förväntade betalningar per månad"
+        margin={{ top: 28, right: 8, bottom: 0, left: 8 }}
+      >
         <XAxis
           dataKey="label"
           interval="preserveStartEnd"
@@ -101,11 +112,21 @@ function ForecastChart({ data }) {
           <LabelList
             dataKey="total"
             position="top"
-            className={labelClassName}
-            formatter={(value) => (value > 0 ? formatCurrency(value) : "")}
+            className={fullLabelClassName(rows.length)}
+            formatter={fullLabel}
             fill={CHART_THEME.text}
             fontSize={12}
           />
+          {showCompactLabels && (
+            <LabelList
+              dataKey="total"
+              position="top"
+              className="d-sm-none"
+              formatter={compactLabel}
+              fill={CHART_THEME.text}
+              fontSize={11}
+            />
+          )}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

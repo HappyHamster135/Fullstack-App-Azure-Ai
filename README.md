@@ -173,10 +173,12 @@ dotnet test
 - `TestClock` ersätter klockan och går i svensk tid, så att månadsskiften, skottår, sommartid och tiden runt midnatt testas deterministiskt.
 - Datumlogiken testas mot en referens med egen kalenderaritmetik. En oberoende Python-kontroll och körningen i webbläsare finns i `docs/ai/verifiering/`.
 
+Frontend har Vitest och Testing Library (`cd frontend && npm test`). Testerna täcker prognoskortets laddning, felläge med "Försök igen", avbrutna anrop när perioden byts, felgränsen och valideringsreglerna för datum. Diagrammet testas i webbläsare, eftersom jsdom saknar storlekar för Recharts.
+
 ## CI/CD
 
 - **`backend.yml`** – vid ändringar i `backend/`: restore → build → **test** → publish → deploy till App Service. Ett rött test stoppar jobbet, så deploy körs aldrig med trasig kod.
-- **`frontend.yml`** – vid ändringar i `frontend/`: `npm ci` → lint → build → deploy till Static Web Apps (eller App Service, om variabeln `AZURE_FRONTEND_WEBAPP_NAME` är satt).
+- **`frontend.yml`** – vid ändringar i `frontend/`: `npm ci` → lint → **test** → build → deploy till Static Web Apps (eller App Service, om variabeln `AZURE_FRONTEND_WEBAPP_NAME` är satt).
 
 Pull requests byggs men deployas inte. Deploy-stegen hoppas över tills GitHub-variablerna `AZURE_WEBAPP_NAME` och `VITE_API_URL` är satta.
 

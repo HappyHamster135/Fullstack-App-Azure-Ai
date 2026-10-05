@@ -5,9 +5,10 @@ class ForecastApi {
     this.http = http;
   }
 
-  async getForecast(months) {
+  async getForecast(months, signal) {
     const { data } = await this.http.get("/api/forecast", {
       params: { months },
+      signal,
     });
     return data;
   }

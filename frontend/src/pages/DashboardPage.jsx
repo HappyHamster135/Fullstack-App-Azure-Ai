@@ -6,6 +6,7 @@ import { getErrorMessage } from "../api/errors.js";
 import CategoryCostChart from "../components/charts/CategoryCostChart.jsx";
 import PaymentsChart from "../components/charts/PaymentsChart.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import ForecastCard from "../components/ForecastCard.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import StatCard from "../components/StatCard.jsx";
@@ -86,7 +87,9 @@ function DashboardPage() {
           </Row>
 
           <div className="mb-3">
-            <ForecastCard />
+            <ErrorBoundary message="Prognosen kunde inte visas. Resten av dashboarden fungerar som vanligt.">
+              <ForecastCard />
+            </ErrorBoundary>
           </div>
 
           <Card className="shadow-sm">

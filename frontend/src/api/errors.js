@@ -4,6 +4,11 @@ const MESSAGES = {
   unknown: 'Något gick fel. Försök igen.',
 }
 
+// Anrop som avbröts med en AbortController är inget fel utan ett medvetet avbrott.
+export function isCanceled(error) {
+  return error?.code === 'ERR_CANCELED'
+}
+
 export function getErrorMessage(error) {
   if (!error.response) {
     return MESSAGES.network

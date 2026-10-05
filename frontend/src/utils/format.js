@@ -5,6 +5,15 @@ const currencyFormatter = new Intl.NumberFormat("sv-SE", {
   maximumFractionDigits: 2,
 });
 
+const thousandsWithDecimalFormatter = new Intl.NumberFormat("sv-SE", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+const thousandsFormatter = new Intl.NumberFormat("sv-SE", {
+  maximumFractionDigits: 0,
+});
+
 const dateFormatter = new Intl.DateTimeFormat("sv-SE", {
   day: "numeric",
   month: "short",
@@ -26,6 +35,21 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export function formatCurrency(amount) {
   return currencyFormatter.format(amount);
+}
+
+// Kort belopp för trånga ställen, t.ex. diagrametiketter på en telefon: 249 kr, 3,4 tkr, 17 tkr.
+// Från 10 tkr utelämnas decimalen, så att etiketten blir lika kort för stora belopp.
+// Mellanrummet är hårt (U+00A0) så att Recharts inte radbryter etiketten mellan talet och enheten.
+export function formatCompactCurrency(amount) {
+  const absolute = Math.abs(amount);
+
+  if (absolute < 1000) {
+    return `${Math.round(amount)}\u00a0kr`;
+  }
+
+  const formatter = absolute < 10000 ? thousandsWithDecimalFormatter : thousandsFormatter;
+
+  return `${formatter.format(amount / 1000)}\u00a0tkr`;
 }
 
 export function formatDate(isoDate) {

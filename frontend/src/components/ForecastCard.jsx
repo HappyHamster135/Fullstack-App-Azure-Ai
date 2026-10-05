@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Card, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
-import { getErrorMessage } from "../api/errors.js";
+import {
+  Alert,
+  Button,
+  Card,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "react-bootstrap";
+import { getErrorMessage, isCanceled } from "../api/errors.js";
 import { forecastApi } from "../api/ForecastApi.js";
 import { formatCurrency, formatMonthYear } from "../utils/format.js";
 import ForecastChart from "./charts/ForecastChart.jsx";
@@ -14,31 +20,33 @@ function ForecastCard() {
   const [forecast, setForecast] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   //------------
   //-----Loading
   //------------
 
   useEffect(() => {
-    // Ett sent svar för ett tidigare val av antal månader ska inte skriva över det nya valet.
-    let isCurrent = true;
+    // Byter man period (eller lämnar sidan) avbryts det pågående anropet. Då kan ett sent svar för ett
+    // tidigare val inte skriva över det nya, och onödig data laddas inte ner färdigt.
+    const controller = new AbortController();
 
     async function load() {
       setIsLoading(true);
       setError("");
 
       try {
-        const result = await forecastApi.getForecast(months);
+        const result = await forecastApi.getForecast(months, controller.signal);
 
-        if (isCurrent) {
+        if (!controller.signal.aborted) {
           setForecast(result);
         }
       } catch (loadError) {
-        if (isCurrent) {
+        if (!isCanceled(loadError)) {
           setError(getErrorMessage(loadError));
         }
       } finally {
-        if (isCurrent) {
+        if (!controller.signal.aborted) {
           setIsLoading(false);
         }
       }
@@ -46,10 +54,8 @@ function ForecastCard() {
 
     load();
 
-    return () => {
-      isCurrent = false;
-    };
-  }, [months]);
+    return () => controller.abort();
+  }, [months, reloadKey]);
 
   //-----------
   //-----Render
@@ -60,7 +66,16 @@ function ForecastCard() {
   if (error) {
     content = (
       <Alert variant="danger" className="mb-0">
-        {error}
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span>{error}</span>
+          <Button
+            size="sm"
+            variant="outline-danger"
+            onClick={() => setReloadKey((key) => key + 1)}
+          >
+            Försök igen
+          </Button>
+        </div>
       </Alert>
     );
   } else if (!forecast) {
@@ -70,7 +85,10 @@ function ForecastCard() {
     const lastMonth = forecast.months.at(-1);
 
     content = (
-      <div className={isLoading ? "opacity-50" : undefined}>
+      <div
+        className={isLoading ? "opacity-50" : undefined}
+        aria-busy={isLoading}
+      >
         <p className="mb-3">
           <span className="fs-2 fw-semibold">
             {formatCurrency(forecast.total)}
@@ -85,6 +103,7 @@ function ForecastCard() {
         <p className="small text-body-secondary mt-2 mb-0">
           Bygger på nästa betalningsdatum och intervall för aktiva
           prenumerationer. Innevarande månad räknas från och med idag.
+          Förfallna betalningar ingår inte.
         </p>
       </div>
     );

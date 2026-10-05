@@ -42,6 +42,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Testa
+        run: npm test
+
       - name: Bygg
         run: npm run build
         env:
