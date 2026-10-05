@@ -15,6 +15,11 @@ Fullstack-app där användaren registrerar sina digitala prenumerationer (kostna
 - Frontend: <https://web-subtracker-jw-czaqekaghchec7fz.swedencentral-01.azurewebsites.net>
 - API (Scalar): <https://app-subtracker-jw-cxgwdgd5h5bnd8f6.swedencentral-01.azurewebsites.net/scalar>
 
+## AI-verktyg i systemutveckling
+
+Prognosfunktionen (`GET /api/forecast` och prognoskortet på dashboarden) togs fram och granskades med AI som en del av kursuppgiften *AI-verktyg i systemutveckling*.
+Logg över prompts, AI:ns svar, granskningar och rättningar finns i [`docs/ai/`](docs/ai/README.md). Sammanfattningen är [`docs/Dokumentation-AI-verktyg.pdf`](docs/Dokumentation-AI-verktyg.pdf).
+
 ## Arkitektur
 
 ```text
