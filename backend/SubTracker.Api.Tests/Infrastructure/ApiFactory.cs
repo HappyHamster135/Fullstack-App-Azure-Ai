@@ -22,6 +22,12 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Klockan som API:t ser. Tester som beror på datum sätter den själva i början av testet.</summary>
     public TestClock Clock { get; } = new();
 
+    /// <summary>
+    /// Standard är att byta ut klockan mot <see cref="Clock"/>. En fabrik som sätter detta till false kör
+    /// den riktiga klockan från Program.cs, så att registreringen där också kan testas.
+    /// </summary>
+    protected virtual bool ReplaceClock => true;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Samma inställningar som kommer från user-secrets/App Service i riktig drift.
@@ -44,8 +50,11 @@ public class ApiFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
 
-            services.RemoveAll<TimeProvider>();
-            services.AddSingleton<TimeProvider>(Clock);
+            if (ReplaceClock)
+            {
+                services.RemoveAll<TimeProvider>();
+                services.AddSingleton<TimeProvider>(Clock);
+            }
         });
     }
 
