@@ -40,7 +40,7 @@ Där texten säger "jag" om granskning och bedömning avses alltså arbetet som 
 
 ## Commits som hör till uppgiften
 
-Allt ligger i det här repot på grenen `claude/blissful-edison-7izj8g`, ovanpå `a936831` (inlämningen av föregående uppgift).
+Allt ligger i det här repot på grenen `claude/blissful-edison-7izj8g`, ovanpå `a936831` (sista commit på `main` när projektet kopierades till det här repot).
 Commit-hasharna ändras om historiken skrivs om, så grenen ska slås ihop med en vanlig merge-commit, aldrig med squash eller rebase.
 
 | Commit | Roll | Beskrivning |
