@@ -5,4 +5,4 @@ public record ForecastMonthResponse(
     int Month,
     decimal Total,
     List<ForecastCategoryResponse> CostByCategory,
-    List<ForecastPaymentResponse> Payments);
+    List<ForecastPaymentResponse>? Payments);

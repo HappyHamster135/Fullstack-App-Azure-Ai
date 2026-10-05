@@ -22,16 +22,29 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
         return await ApiTestUser.RegisterAsync(factory);
     }
 
-    private static async Task<ForecastResponse> GetForecastAsync(ApiTestUser user, int? months = null)
+    private static async Task<ForecastResponse> GetForecastAsync(
+        ApiTestUser user, int? months = null, bool includePayments = true)
     {
-        var url = months is null ? "/api/forecast" : $"/api/forecast?months={months}";
+        var query = new List<string>();
+
+        if (months is not null)
+        {
+            query.Add($"months={months}");
+        }
+
+        if (includePayments)
+        {
+            query.Add("includePayments=true");
+        }
+
+        var url = "/api/forecast" + (query.Count > 0 ? "?" + string.Join("&", query) : "");
 
         return await user.Client.GetFromJsonAsync<ForecastResponse>(url)
             ?? throw new InvalidOperationException("Prognosen returnerade inget svar.");
     }
 
     private static List<DateOnly> PaymentDates(ForecastResponse forecast, string name) =>
-        forecast.Months.SelectMany(m => m.Payments).Where(p => p.Name == name).Select(p => p.Date).ToList();
+        forecast.Months.SelectMany(m => m.Payments ?? []).Where(p => p.Name == name).Select(p => p.Date).ToList();
 
 
     //-----------------
@@ -57,8 +70,8 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
         var ownerForecast = await GetForecastAsync(owner);
         var otherForecast = await GetForecastAsync(other);
 
-        Assert.All(ownerForecast.Months.SelectMany(m => m.Payments), p => Assert.Equal("Ägarens", p.Name));
-        Assert.All(otherForecast.Months.SelectMany(m => m.Payments), p => Assert.Equal("Andras", p.Name));
+        Assert.All(ownerForecast.Months.SelectMany(m => m.Payments ?? []), p => Assert.Equal("Ägarens", p.Name));
+        Assert.All(otherForecast.Months.SelectMany(m => m.Payments ?? []), p => Assert.Equal("Andras", p.Name));
         Assert.Equal(600m, ownerForecast.Total);
         Assert.Equal(330m, otherForecast.Total);
     }
@@ -182,7 +195,7 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
         var forecast = await GetForecastAsync(user);
 
         // Januari: bara det som dras idag eller senare.
-        Assert.Equal(["Idag"], forecast.Months[0].Payments.Select(p => p.Name));
+        Assert.Equal(["Idag"], forecast.Months[0].Payments!.Select(p => p.Name));
         Assert.Equal(100m, forecast.Months[0].Total);
 
         // En förfallen prenumeration fortsätter i sin takt från nästa månad.
@@ -286,7 +299,7 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
         var forecast = await GetForecastAsync(user);
 
         Assert.Equal(0m, forecast.Total);
-        Assert.Empty(forecast.Months.SelectMany(m => m.Payments));
+        Assert.Empty(forecast.Months.SelectMany(m => m.Payments ?? []));
     }
 
 
@@ -350,7 +363,39 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
 
         var february = (await GetForecastAsync(user, 2)).Months[1];
 
-        Assert.Equal(["C", "A", "B"], february.Payments.Select(p => p.Name));
+        Assert.Equal(["C", "A", "B"], february.Payments!.Select(p => p.Name));
+    }
+
+    [Fact]
+    public async Task Forecast_OmitsThePaymentList_UnlessRequested()
+    {
+        // Frontend läser bara summor och kategorier. Betalningslistan var 97–100 % av svaret, så den är opt-in.
+        var user = await RegisterOnAsync(2027, 1, 15);
+        await user.AddSubscriptionAsync("Netflix", 100m, BillingInterval.Monthly, D(2027, 1, 20));
+
+        var lean = await GetForecastAsync(user, includePayments: false);
+        var full = await GetForecastAsync(user, includePayments: true);
+
+        Assert.All(lean.Months, m => Assert.Null(m.Payments));
+        Assert.Equal(600m, lean.Total);
+        Assert.All(lean.Months, m => Assert.Single(m.CostByCategory));
+        Assert.All(full.Months, m => Assert.Single(m.Payments!));
+    }
+
+    [Fact]
+    public async Task Forecast_SortsPaymentsOnTheSameDateTheSameWayOnEveryServer()
+    {
+        // Ordningen får inte bero på serverns kultur (ICU eller invariant): namnen jämförs utan hänsyn till versaler,
+        // och id avgör när namnen är lika. Å, Ä och Ö hamnar efter Z, som i svensk sortering.
+        var user = await RegisterOnAsync(2027, 1, 15);
+        foreach (var name in new[] { "Zeta", "Åsa", "Apple", "apple", "Banan" })
+        {
+            await user.AddSubscriptionAsync(name, 10m, BillingInterval.Monthly, D(2027, 2, 3));
+        }
+
+        var february = (await GetForecastAsync(user, 2)).Months[1];
+
+        Assert.Equal(["Apple", "apple", "Banan", "Zeta", "Åsa"], february.Payments!.Select(p => p.Name));
     }
 
     [Fact]
@@ -361,7 +406,7 @@ public class ForecastEndpointTests(ApiFactory factory) : IClassFixture<ApiFactor
         var subscription = await user.AddSubscriptionAsync(
             "Netflix", 99.5m, BillingInterval.Monthly, D(2027, 1, 20), categoryId: category.Id);
 
-        var json = await user.Client.GetStringAsync("/api/forecast?months=1");
+        var json = await user.Client.GetStringAsync("/api/forecast?months=1&includePayments=true");
 
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;

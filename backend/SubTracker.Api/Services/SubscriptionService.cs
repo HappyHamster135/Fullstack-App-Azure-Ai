@@ -9,11 +9,18 @@ namespace SubTracker.Api.Services;
 
 public class SubscriptionService(AppDbContext db) : ISubscriptionService
 {
+    // Registreringen är öppen och prognosens arbete växer med antalet prenumerationer,
+    // så antalet per användare är begränsat. En vanlig användare har långt färre.
+    public const int MaxPerUser = 200;
+
     private static readonly ServiceError NotFound =
         ServiceError.NotFound("Prenumerationen finns inte.");
 
     private static readonly ServiceError CategoryNotFound = ServiceError.Validation(
         new Dictionary<string, string[]> { [nameof(SubscriptionRequest.CategoryId)] = ["Kategorin finns inte."] });
+
+    private static readonly ServiceError LimitReached =
+        ServiceError.Conflict($"Du kan ha högst {MaxPerUser} prenumerationer.");
 
 
     //---------
@@ -52,6 +59,11 @@ public class SubscriptionService(AppDbContext db) : ISubscriptionService
         if (category is null)
         {
             return ServiceResult<SubscriptionResponse>.Failure(CategoryNotFound);
+        }
+
+        if (await db.Subscriptions.CountAsync(s => s.UserId == userId) >= MaxPerUser)
+        {
+            return ServiceResult<SubscriptionResponse>.Failure(LimitReached);
         }
 
         var subscription = new Subscription { UserId = userId, CreatedAt = DateTime.UtcNow };

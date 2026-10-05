@@ -147,7 +147,7 @@ Alla endpoints nedan kräver inloggning (401 utan token) och rör bara den inlog
 |---|---|---|
 | `GET /api/subscriptions` | Alla prenumerationer, sorterade på nästa betalning | 200 |
 | `GET /api/subscriptions/{id}` | En prenumeration | 200, 404 |
-| `POST /api/subscriptions` | Skapa | 201, 400 |
+| `POST /api/subscriptions` | Skapa. Högst 200 prenumerationer per användare. | 201, 400, 409 |
 | `PUT /api/subscriptions/{id}` | Uppdatera | 200, 400, 404 |
 | `DELETE /api/subscriptions/{id}` | Ta bort (inklusive betalningar) | 204, 404 |
 | `GET /api/subscriptions/{id}/payments` | Betalningshistorik | 200, 404 |
@@ -159,7 +159,7 @@ Alla endpoints nedan kräver inloggning (401 utan token) och rör bara den inlog
 | `PUT /api/categories/{id}` | Uppdatera | 200, 400, 404, 409 |
 | `DELETE /api/categories/{id}` | Ta bort – nekas om kategorin används | 204, 404, 409 |
 | `GET /api/dashboard` | Sammanställning: total kostnad per månad/år, kostnad per kategori, betalningar inom 30 dagar och betalt per månad (senaste sex) | 200 |
-| `GET /api/forecast?months=N` | Prognos över kommande betalningar för aktiva prenumerationer: total för perioden samt per månad summa, kostnad per kategori och enskilda betalningar. `N` är 1–24 hela kalendermånader från och med innevarande månad (standard 6). Datumen räknas från nästa betalningsdatum och intervall, och bara betalningar från och med idag ingår. | 200, 400 |
+| `GET /api/forecast?months=N&includePayments=true` | Prognos över kommande betalningar för aktiva prenumerationer: total för perioden samt per månad summa och kostnad per kategori. `N` är 1–24 hela kalendermånader från och med innevarande månad (standard 6). Datumen räknas från nästa betalningsdatum och intervall, och bara betalningar från och med idag ingår (förfallna ingår inte). Med `includePayments=true` följer även varje enskild betalning (prenumeration, belopp, datum, kategori) med. Listan är avstängd som standard eftersom den är nästan hela svaret och webbappen inte använder den. "Idag" räknas i svensk tid. | 200, 400 |
 
 ## CI/CD
 

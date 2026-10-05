@@ -15,5 +15,5 @@ public class ForecastController(IForecastService forecastService) : ApiControlle
     [ProducesResponseType<ForecastResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ForecastResponse>> Get([FromQuery] ForecastRequest request) =>
-        Ok(await forecastService.GetAsync(User.GetUserId(), request.Months));
+        Ok(await forecastService.GetAsync(User.GetUserId(), request.Months, request.IncludePayments));
 }

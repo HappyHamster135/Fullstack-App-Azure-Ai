@@ -38,7 +38,7 @@ public class ForecastServiceTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var forecast = await service.GetAsync(user.User.Id, 6);
 
-        Assert.NotEmpty(forecast.Months.SelectMany(m => m.Payments));
+        Assert.True(forecast.Total > 0);
         Assert.Empty(db.ChangeTracker.Entries());
     }
 }
