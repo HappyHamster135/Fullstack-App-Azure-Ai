@@ -136,16 +136,17 @@ Se F3. `AsNoTracking()` på en ren läsfråga. Liten förbättring, ingen risk.
 
 ## 4. Fynd som jag medvetet *inte* rättade
 
-Att granska är också att avgöra vad som inte ska ändras.
+Att granska är också att avgöra vad som inte ska ändras. Tabellen visar läget **efter den här granskningen**.
+Tre av punkterna ändrade jag mig om när den oberoende AI-granskningen i [`03-ai-analys.md`](03-ai-analys.md) visade bevis jag inte hade, och de är markerade nedan.
 
 | Fynd | Bedömning | Motivering |
 |---|---|---|
-| **Svaret är större än vad UI:t använder.** Varje betalning bär ett helt kategoriobjekt, och frontend läser aldrig listan `payments`. Mätt: 86 KiB för 40 prenumerationer och 6 månader (172 KiB för 12). | Kvarstår. | Listan över enskilda betalningar var ett uttryckligt krav i prompten, så API-kontraktet är rätt. Storleken är rimlig för normal användning. Framtida åtgärd: valfri flagga för att utesluta listan, eller komprimering. |
-| **"Idag" är UTC**, inte svensk tid. Runt midnatt kan datumet vara fel några timmar. | Kvarstår. | Dashboarden och `PaymentService` gör likadant, så prognosen är konsekvent med resten. Att byta tidszon i bara en av tre services vore sämre än att göra det på ett ställe senare. `TimeProvider` (F1) gör det enkelt. |
+| **Svaret är större än vad UI:t använder.** Varje betalning bär ett helt kategoriobjekt, och frontend läser aldrig listan `payments`. Mätt: 86 KiB för 40 prenumerationer och 6 månader (172 KiB för 12). | Kvarstod här. **Åtgärdad efter AI-tillfälle 2** (`5d69d13`). | Jag bedömde storleken som rimlig för normal användning och höll fast vid kravet i prompten. Granskaren mätte ett missbruksscenario jag inte hade provat: ett konto kunde skapa obegränsat många prenumerationer, och svaret växer med prenumerationer × betalningar (22 MiB för 1 000 veckoprenumerationer). Betalningslistan är nu opt-in och antalet prenumerationer är begränsat. |
+| **"Idag" är UTC**, inte svensk tid. Runt midnatt kan datumet vara fel några timmar. | Kvarstod här. **Åtgärdad efter AI-tillfälle 2** (`d161168`). | Mitt skäl var att dashboarden och `PaymentService` gör likadant. Granskaren visade att det syns för användaren: i en svensk webbläsare räknade prognosen in en betalning som dashboarden samtidigt visade som förfallen. Då är konsekvens med resten inget försvar. Alla tre tjänsterna räknar nu svensk tid. |
 | **Icke-numeriska `months` (t.ex. `abc`) ger ASP.NET:s engelska standardtext.** | Kvarstår. | Det är global modellbindning som alla endpoints delar, och frontend skickar bara 3, 6 eller 12. Att ändra det globalt är en egen uppgift. |
 | **`ForecastChart` liknar `PaymentsChart`** (tooltip, stapeldiagram, tomt läge). | Kvarstår. | Datan, tooltipen och etiketterna skiljer sig åt. En gemensam abstraktion med bara två användare vore för tidig. |
 | **`RegisterPayment` flyttar fram datumet steg för steg**, så en betalning den 31:a blir den 28:e efter februari och förblir det. Prognosen utgår från det lagrade datumet och ärver därför glidningen. | Kvarstår, finns redan i befintlig kod. | AI:n påpekade det själv. Månadsfördelningen i prognosen påverkas inte, bara det exakta datumet. Rätt åtgärd är att lagra betalningsdagen, vilket är ett eget förändringsärende. |
-| **Datumfält har ingen över- eller undergräns i valideringen.** Jag verifierade att en prenumeration med nästa betalning 9999-12-31 ger 500 vid "Markera betald" (`AddMonths` svämmar över). Prognosen hanterar samma data utan fel. | Kvarstår, finns redan i befintlig kod. | Felet fanns före AI:ns ändring (`NextDateAfter` kastade likadant). Att begränsa datumen är en separat rättning av befintlig validering. |
+| **Datumfält har ingen över- eller undergräns i valideringen.** Jag verifierade att en prenumeration med nästa betalning 9999-12-31 ger 500 vid "Markera betald" (`AddMonths` svämmar över). Prognosen hanterar samma data utan fel. | Kvarstod här. **Åtgärdad efter AI-tillfälle 2** (`7b002d9`). | Felet fanns före AI:ns ändring (`NextDateAfter` kastade likadant) och jag såg det som en separat rättning av befintlig validering. Granskaren pekade på att det hänger ihop med resursfrågan (F3 här), så datumen är nu begränsade till 2000–2100 i både API och frontend. |
 
 ## 5. Sammanfattning
 
@@ -153,4 +154,4 @@ Att granska är också att avgöra vad som inte ska ändras.
 - **Det jag fick rätta:** fem punkter (klocka, valideringsmönster, begränsat arbete per prenumeration, spårning, rubrik). Ingen av dem gav fel svar vid vanlig användning. De handlar om testbarhet, konsekvens med projektets mönster, robusthet mot ovanliga indata och tydlighet. Flera av dem blev tydliga först när jag testade, mätte eller körde appen: valideringens felformat syntes först i svaret, kostnaden för gamla datum först i mätningen och den missvisande rubriken först i webbläsaren.
 - **Lärdom:** AI:ns egen försäkran om att koden är verifierad är inte ett skäl att hoppa över granskningen. Förslaget var bra, och just därför var det lätt att tro på. Det som hade gått förbi vid ytlig läsning var testbarhet, felformat och beteendet för ovanliga indata.
 
-Slutstatus efter granskningen: **40 tester gröna**, `dotnet build` utan varningar, `npm run lint` och `npm run build` rena.
+Status efter den här granskningen (före AI-tillfälle 2): **40 tester gröna**, `dotnet build` utan varningar, `npm run lint` och `npm run build` rena. Slutstatus efter båda granskningarna finns i [`03-ai-analys.md`](03-ai-analys.md).

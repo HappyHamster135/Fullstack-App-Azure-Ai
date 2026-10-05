@@ -347,4 +347,68 @@ Svara på svenska.
 
 ## Min kritiska bedömning
 
-Avsnittet fylls i efter att jag har verifierat varje fynd (se nedan och i commit-historiken).
+Jag tog inte rapporten för sann. Varje fynd verifierades med en egen körning innan jag agerade, och jag avgjorde själv vad som skulle åtgärdas, ändras eller lämnas. Commit-hashar finns i tabellen.
+
+### Sammanfattning
+
+- Granskaren bekräftade att **kärnan är korrekt**, och det stämmer med min egen oberoende kontroll (0 avvikelser mot en separat Python-beräkning, både före och efter rättningarna). Alla 12 fynd rörde kanterna: tester, tid, resurser, indata och frontend.
+- **Alla 12 fynd gick att verifiera och höll**, med två förbehåll: Azure-effekten i F1 är en misstanke som jag inte kan pröva här, och F5 kräver ett kontraktsbrott för att utlösas.
+- Jag **åtgärdade 11 helt eller delvis**. För F4 lämnade jag själva beteendet medvetet (det kräver en migration) och rättade bara den missvisande kommentaren. Jag ändrade mig om tre punkter som jag lämnat i den första granskningen.
+- Jag **gjorde inte allt granskaren föreslog**, och i två fall valde jag en annan lösning än den föreslagna (F6, F10).
+
+### Fynd för fynd
+
+| # | AI:ns bedömning | Min verifiering | Min bedömning och åtgärd | Commit |
+|---|---|---|---|---|
+| F1 | Medel: obegränsad resursförbrukning | Reproducerat. Realistisk användare (24 prenumerationer, 12 mån): 54 KiB, varav UI:t behöver några KB. 1 000 försök att skapa prenumerationer gav 1 000 × 201 och ett svar på 22 MiB. Azure-effekten har jag inte kunnat pröva. | Rätt, och medel är rimligt eftersom registreringen är öppen. **Betalningslistan är nu opt-in** (4,5 KiB i stället för 54 KiB) och **taket är 200 prenumerationer** per användare (800 av 1 000 försök avvisas, värsta svar 4,4 MiB). Jag valde bort rate limiting, `CancellationToken` och komprimering: de är globala ändringar som övriga endpoints också saknar. | `5d69d13` |
+| F2 | Medel: CI kör inga tester, 10 av 29 mutanter överlever | Körde om alla 29 mutanter på en kopia och fick **samma 10 överlevare**. | Rätt, och träffande: min referens i testet återanvände `AddIntervals`, och en kommentar påstod Python-verifiering utan att skriptet fanns i repot. **CI kör nu testerna före deploy**, 16 nya tester dödar nio av tio, referensen använder egen kalenderaritmetik och skripten ligger i repot. | `6915380` |
+| F3 | Låg: "idag" i UTC | Fem tester röda mot koden (23:30 UTC är 00:30 svensk tid). | Rätt. I den första granskningen lämnade jag det med motiveringen att dashboarden gör likadant. Granskarens bevis att prognosen och dashboarden **syns oense för användaren** fick mig att ändra mig. Ny `SwedishTimeProvider`. | `d161168` |
+| F4 | Låg: `RegisterPayment` glider 31 → 28 | Känt sedan första granskningen. | Rätt, och kommentaren på `GetPaymentDates` var missvisande. **Kommentaren är rättad.** Beteendet kvarstår: rätt åtgärd är att lagra betalningsdagen, vilket kräver en migration och är ett eget ärende. Står under "Kända begränsningar" i README. | `7b002d9` |
+| F5 | Låg: ingen ErrorBoundary, hela appen blir tom | Mitt första försök att återskapa **misslyckades**: musen hamnade utanför visningsytan och tooltipen öppnades aldrig. Med en hover som scrollar elementet i vy: sidans innehåll gick från 1 452 till **0 tecken**. | Rätt, men det kräver ett kontraktsbrott (svar utan `costByCategory`), så låg är rimligt. Följden, en tom sida, är ändå dålig. **ErrorBoundary runt prognoskortet** och null-säkert diagram. | `c53c86c` |
+| F6 | Låg: etiketter krockar på telefon | Bekräftat: 5 överlappande etiketter på 360 px. Med mina belopp var de trånga men läsbara. | Fyndet är rätt, men granskarens enklaste åtgärd (dölja dem) var **för trubbig**: den kastar information som oftast ryms. Jag gjorde en **annan lösning**: kortare belopp på smal skärm ("3,4 tkr"). Mätt utan överlapp på 320–576 px, även för femsiffriga belopp. | `c53c86c` |
+| F7 | Låg: ingen "försök igen", inget avbrott, kaskadladdning | Bekräftat: 0 nya anrop vid omklick, och det ersatta 12-månadersanropet laddades ner klart. | **Delvis**: "Försök igen" och `AbortController` (avbrutet anrop räknas inte som fel). Kaskadladdningen lät jag vara: kortet visas bara när det finns aktiva prenumerationer, och en extra rundtur kostar mindre än en omstrukturering. | `c53c86c` |
+| F8 | Låg: inga datumgränser, 500 för år 9999 | Samma sak hade jag själv verifierat i första granskningen. | Rätt. Jag hade klassat det som en separat rättning, men det hänger ihop med resursfrågan. **Datumen är begränsade till 2000–2100** i API och frontend. | `7b002d9` |
+| F9 | Låg: dashboard och prognos oense om förfallna | Bekräftat (designval). | Förvirringen är verklig, beteendet avsiktligt. **Texten under diagrammet** säger nu att förfallna betalningar inte ingår. | `c53c86c` |
+| F10 | Låg: kulturberoende sortering | Bekräftat med egen körning: samma kod ger `apple \| Apple \| Åsa \| Banan \| Zeta` med ICU och `Apple \| Banan \| Zeta \| apple \| Åsa` i invariant läge. Min jämförare ger `Apple \| apple \| Banan \| Zeta \| Åsa` i båda. | Rätt problem, men granskarens förslag (en `sv-SE`-jämförare) är **fortfarande olika utan ICU**. Jag valde `OrdinalIgnoreCase` och id som tie-breaker, så att ordningen blir densamma på varje server. Å, Ä och Ö hamnar efter Z. | `5d69d13` |
+| F11 | Låg: `TimeProvider` bara i prognosen | Bekräftat. | Rätt. Hanteras tillsammans med F3: tre tjänster räknar "idag" på samma sätt via `GetToday()`. | `d161168` |
+| F12 | Låg: diagrammet saknar namn, laddning aviseras inte | Bekräftat i DOM. | Rätt. **Diagrammet har ett namn** och innehållet markeras `aria-busy`. | `c53c86c` |
+
+Småsakerna: standardvärdet 6 finns nu i OpenAPI (`DefaultValue`). De övriga (engelsk text för bindningsfel, `date` mot `dueDate`, `IntervalsBefore` som publik) lämnade jag, och bindningsfelet står i "Kända begränsningar".
+
+### Var jag inte höll med, eller bedömde annorlunda
+
+- **F6:** att dölja etiketterna löser kollisionen men kostar information. Jag mätte och valde kortare belopp.
+- **F10:** granskarens jämförare löser inte det den pekar på, eftersom svensk sortering beror på ICU.
+- **F7:** kaskadladdningen är en medveten avvägning, inte ett fel.
+- **F1:** jag tog de två åtgärder som begränsar värsta fallet, inte hela listan. Rate limiting och komprimering är globala beslut för hela API:t.
+
+### Det granskaren inte kunde veta, eller där rapporten har brister
+
+- **Azure-effekten i F1** är en misstanke. Planens kvoter är inte kontrollerade och ingenting är mätt mot Azure.
+- Rapporten är inte helt konsekvent: sammanfattningen säger att 89–100 % av svaret aldrig används, medan detaljen säger 97–100 %.
+- Etikettmätningen i F6 gjordes med en bredare systemfont än riktiga telefoner har.
+
+### Vad jag lärde mig om att använda AI för granskning
+
+- En **oberoende** granskare med tomt sammanhang hittade sådant jag inte hade sett: tidszonen, testlucka efter testlucka och resursförstärkningen. Det hade jag svårt att få syn på själv, eftersom jag hade skrivit rättningarna.
+- Det som gjorde rapporten **användbar var att varje fynd gick att köra om**. Jag kunde skilja verifierat från misstänkt, och jag hittade inget påstående som var rakt felaktigt.
+- Verifiering gäller åt båda håll: mitt eget första försök att reproducera F5 misslyckades på grund av ett fel i mitt test. Hade jag då avfärdat fyndet hade jag haft fel.
+- **Att köra om tester och mutanter på egen hand** var värt mer än att läsa rapporten. Rapporten påstod "10 av 29 överlever", men det var min egen körning som gjorde att jag litade på det.
+- **Mina egna rättningar hade också ett hål.** Testerna ersätter klockan, så den riktiga `SwedishTimeProvider` och dess registrering i `Program.cs` kördes aldrig. Granskaren kunde inte se det (den granskade koden före rättningarna), men jag hittade det genom att tillämpa dess metod, mutationsprovning, på mina egna rättningar. Jag lade till tester (`37698f0`).
+- Två AI-tillfällen räckte inte för att få allt rätt, men de hittade olika saker. Det första (min granskning) hittade fel i själva förslaget. Det andra hittade luckor i **min** granskning.
+
+### Resultat efter båda granskningarna
+
+| Mått | Före granskning | Efter AI-tillfälle 2 |
+|---|---|---|
+| Backendtester | 4 (baslinje) | **80** |
+| Frontendtester | 0 (ingen testkörare) | **33** |
+| Tester i CI | inga | **backend och frontend kör tester före deploy** |
+| Mutationsprovning, granskarens 29 mutanter (anpassade till den ändrade koden) | 19 av 29 fångas | **29 av 29** |
+| Mutationsprovning, alla 55 varianter | – | **52 av 55** (de tre övriga är ekvivalenta) |
+| Oberoende beräkning mot API:t | 0 avvikelser (260 prenumerationer) | 0 avvikelser (260 prenumerationer) |
+| Helkörning i webbläsare (scriptad användarresa) | – | **18 av 18 kontroller** |
+| Svarsstorlek, realistisk användare, 12 mån | 54,4 KiB | **4,5 KiB** |
+| Värsta svar för ett missbrukande konto | 22 MiB (1 000 prenumerationer) och växande | **0,01 MiB** (4,4 MiB med betalningslista) |
+| Etiketter som överlappar på 360 px, 6 mån | 5 | **0** |
+| "Idag" vid 23:30 UTC | fel dag | **rätt dag (svensk tid)** |
