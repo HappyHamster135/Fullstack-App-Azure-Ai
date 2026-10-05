@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useForm } from "../hooks/useForm.js";
 import { BILLING_INTERVALS } from "../utils/billingIntervals.js";
 import { toIsoDate } from "../utils/format.js";
-import { validateSubscription } from "../utils/validation.js";
+import { MAX_DATE, MIN_DATE, validateSubscription } from "../utils/validation.js";
 import FormField from "./FormField.jsx";
 
 //----------------
@@ -141,6 +141,8 @@ function SubscriptionFormModal({ subscription, categories, onSave, onClose }) {
               <FormField
                 label="Startdatum"
                 type="date"
+                min={MIN_DATE}
+                max={MAX_DATE}
                 {...field("startDate")}
               />
             </Col>
@@ -148,6 +150,8 @@ function SubscriptionFormModal({ subscription, categories, onSave, onClose }) {
               <FormField
                 label="Nästa betalning"
                 type="date"
+                min={MIN_DATE}
+                max={MAX_DATE}
                 {...field("nextPaymentDate")}
               />
             </Col>

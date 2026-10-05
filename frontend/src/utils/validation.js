@@ -1,6 +1,10 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
+// Samma gränser som SubscriptionRequest.MinDate/MaxDate i API:t.
+export const MIN_DATE = "2000-01-01";
+export const MAX_DATE = "2100-12-31";
+
 //----------
 //-----Rules
 //----------
@@ -76,11 +80,19 @@ const SUBSCRIPTION_RULES = {
   ],
   startDate: [
     { test: (v) => v.startDate !== "", message: "Ange ett startdatum." },
+    {
+      test: (v) => isBetween(v.startDate, MIN_DATE, MAX_DATE),
+      message: `Startdatumet måste vara mellan ${MIN_DATE} och ${MAX_DATE}.`,
+    },
   ],
   nextPaymentDate: [
     {
       test: (v) => v.nextPaymentDate !== "",
       message: "Ange nästa betalningsdatum.",
+    },
+    {
+      test: (v) => isBetween(v.nextPaymentDate, MIN_DATE, MAX_DATE),
+      message: `Nästa betalning måste vara mellan ${MIN_DATE} och ${MAX_DATE}.`,
     },
     {
       test: (v) => !v.startDate || v.nextPaymentDate >= v.startDate,

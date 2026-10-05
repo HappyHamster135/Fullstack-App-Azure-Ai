@@ -147,8 +147,8 @@ Alla endpoints nedan kräver inloggning (401 utan token) och rör bara den inlog
 |---|---|---|
 | `GET /api/subscriptions` | Alla prenumerationer, sorterade på nästa betalning | 200 |
 | `GET /api/subscriptions/{id}` | En prenumeration | 200, 404 |
-| `POST /api/subscriptions` | Skapa. Högst 200 prenumerationer per användare. | 201, 400, 409 |
-| `PUT /api/subscriptions/{id}` | Uppdatera | 200, 400, 404 |
+| `POST /api/subscriptions` | Skapa. Högst 200 prenumerationer per användare. Start- och betalningsdatum måste vara mellan 2000-01-01 och 2100-12-31. | 201, 400, 409 |
+| `PUT /api/subscriptions/{id}` | Uppdatera (samma datumgränser) | 200, 400, 404 |
 | `DELETE /api/subscriptions/{id}` | Ta bort (inklusive betalningar) | 204, 404 |
 | `GET /api/subscriptions/{id}/payments` | Betalningshistorik | 200, 404 |
 | `POST /api/subscriptions/{id}/payments` | Registrera betalning – flyttar fram nästa betalningsdatum. Tom body `{}` ger pris och dagens datum. | 201, 400, 404 |
@@ -161,9 +161,31 @@ Alla endpoints nedan kräver inloggning (401 utan token) och rör bara den inlog
 | `GET /api/dashboard` | Sammanställning: total kostnad per månad/år, kostnad per kategori, betalningar inom 30 dagar och betalt per månad (senaste sex) | 200 |
 | `GET /api/forecast?months=N&includePayments=true` | Prognos över kommande betalningar för aktiva prenumerationer: total för perioden samt per månad summa och kostnad per kategori. `N` är 1–24 hela kalendermånader från och med innevarande månad (standard 6). Datumen räknas från nästa betalningsdatum och intervall, och bara betalningar från och med idag ingår (förfallna ingår inte). Med `includePayments=true` följer även varje enskild betalning (prenumeration, belopp, datum, kategori) med. Listan är avstängd som standard eftersom den är nästan hela svaret och webbappen inte använder den. "Idag" räknas i svensk tid. | 200, 400 |
 
+## Tester
+
+```bash
+dotnet test
+```
+
+`backend/SubTracker.Api.Tests` (xUnit) startar hela API:t i minnet med `WebApplicationFactory` och byter SQL Server mot SQLite i minnet, så inga databasserver behövs. Testerna gör riktiga HTTP-anrop genom JWT, controllers, services och EF Core.
+
+- SQL Server-migrationerna hoppas över i testerna (`Database:MigrateOnStartup=false`, standard är `true`). Schemat skapas av EF Core från modellen.
+- `TestClock` ersätter klockan och går i svensk tid, så att månadsskiften, skottår, sommartid och tiden runt midnatt testas deterministiskt.
+- Datumlogiken testas mot en referens med egen kalenderaritmetik. En oberoende Python-kontroll och körningen i webbläsare finns i `docs/ai/verifiering/`.
+
 ## CI/CD
 
-- **`backend.yml`** – vid ändringar i `backend/`: restore → build → publish → deploy till App Service.
+- **`backend.yml`** – vid ändringar i `backend/`: restore → build → **test** → publish → deploy till App Service. Ett rött test stoppar jobbet, så deploy körs aldrig med trasig kod.
 - **`frontend.yml`** – vid ändringar i `frontend/`: `npm ci` → lint → build → deploy till Static Web Apps (eller App Service, om variabeln `AZURE_FRONTEND_WEBAPP_NAME` är satt).
 
 Pull requests byggs men deployas inte. Deploy-stegen hoppas över tills GitHub-variablerna `AZURE_WEBAPP_NAME` och `VITE_API_URL` är satta.
+
+## Kända begränsningar
+
+Sådant som är kartlagt men medvetet inte åtgärdat. Skälen finns i `docs/ai/`.
+
+- **`RegisterPayment` flyttar fram datumet från föregående datum.** En betalning den 31:a blir den 28:e efter en februari och förblir det. Prognosen räknar rätt inom sig, men utgår från det lagrade datumet. Rätt åtgärd är att lagra betalningsdagen, vilket kräver en migration.
+- **Icke-numeriska frågeparametrar** (t.ex. `months=abc`) ger ASP.NET Cores engelska standardtext. Det är global modellbindning som alla endpoints delar.
+- **Ingen rate limiting, svarskomprimering eller `CancellationToken`** i API:t. Resursförbrukningen begränsas i stället av taket på 200 prenumerationer per användare och av att betalningslistan i prognosen är avstängd som standard.
+- **Testerna körs mot SQLite.** Prognosfrågan använder bara enkla filter (användare, aktiv, datum) som översätts likadant till SQL Server, men den är inte körd mot en riktig SQL Server i testerna.
+- **Svensk tid förutsätter tidszonsdatabasen.** Saknas `Europe/Stockholm` på servern räknas datum i UTC och en varning loggas vid start.

@@ -43,10 +43,12 @@ public class Subscription
     }
 
     // Betalningsdatumen mellan from och to (inklusive), utifrån nästa betalning och intervallet.
-    // Varje datum räknas från nästa betalning och inte från datumet före. Annars skulle en betalning
-    // den 31:a hamna på den 28:e efter februari och aldrig komma tillbaka till den 31:a.
+    // Inom en prognos räknas varje datum från nästa betalning och inte från datumet före, så en betalning
+    // den 31:a blir 28 feb, 31 mars, 30 april och inte 28:e resten av året.
+    // Observera: RegisterPayment stegar fortfarande från föregående datum, så efter "Markera betald" över februari
+    // har det lagrade datumet redan glidit till den 28:e. Det kräver att betalningsdagen lagras (se README, Kända begränsningar).
     // Loopen börjar vid första betalningen som kan ligga på eller efter from i stället för att stega från
-    // NextPaymentDate. Datumet kommer från användaren och saknar nedre gräns, så arbetet får inte växa med dess ålder.
+    // NextPaymentDate. Datumet kommer från användaren, så arbetet får inte växa med dess ålder.
     public IEnumerable<DateOnly> GetPaymentDates(DateOnly from, DateOnly to)
     {
         for (var count = BillingInterval.IntervalsBefore(NextPaymentDate, from); ; count++)

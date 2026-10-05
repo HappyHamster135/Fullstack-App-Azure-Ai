@@ -5,6 +5,11 @@ namespace SubTracker.Api.Dtos.Subscriptions;
 
 public record SubscriptionRequest : IValidatableObject
 {
+    // Datumen är användarens indata och styr datumaritmetik och beräkningar. Utan gränser gav t.ex. 9999-12-31 ett
+    // 500-fel vid "Markera betald". Samma gränser finns i frontend (utils/validation.js).
+    public static readonly DateOnly MinDate = new(2000, 1, 1);
+    public static readonly DateOnly MaxDate = new(2100, 12, 31);
+
     [Required(ErrorMessage = "Ange ett namn.")]
     [StringLength(100, ErrorMessage = "Namnet får vara högst 100 tecken.")]
     public string Name { get; init; } = string.Empty;
@@ -33,6 +38,20 @@ public record SubscriptionRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (StartDate is { } startDate && (startDate < MinDate || startDate > MaxDate))
+        {
+            yield return new ValidationResult(
+                $"Startdatumet måste vara mellan {MinDate:yyyy-MM-dd} och {MaxDate:yyyy-MM-dd}.",
+                [nameof(StartDate)]);
+        }
+
+        if (NextPaymentDate is { } nextPaymentDate && (nextPaymentDate < MinDate || nextPaymentDate > MaxDate))
+        {
+            yield return new ValidationResult(
+                $"Nästa betalning måste vara mellan {MinDate:yyyy-MM-dd} och {MaxDate:yyyy-MM-dd}.",
+                [nameof(NextPaymentDate)]);
+        }
+
         if (StartDate is not null && NextPaymentDate < StartDate)
         {
             yield return new ValidationResult(
