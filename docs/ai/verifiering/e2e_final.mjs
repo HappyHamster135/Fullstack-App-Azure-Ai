@@ -80,8 +80,10 @@ const subs = [
   { name: "Tidskriften", category: "Nyheter & media", price: 449, interval: "Quarterly", label: "Varje kvartal", next: plusDays(today, -20) },
 ];
 
-const browser = await chromium.launch({ executablePath: CHROMIUM, args: ["--no-sandbox"] });
-const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: "sv-SE" });
+// CRISP=1 ger skarpare skärmdumpar till rapporten (dubbel upplösning, gråskaleantialiasing). Kontrollerna påverkas inte.
+const crisp = process.env.CRISP === "1";
+const browser = await chromium.launch({ executablePath: CHROMIUM, args: ["--no-sandbox", ...(crisp ? ["--disable-lcd-text"] : [])] });
+const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: "sv-SE", deviceScaleFactor: crisp ? 2 : 1 });
 const page = await context.newPage();
 
 const consoleErrors = [];
