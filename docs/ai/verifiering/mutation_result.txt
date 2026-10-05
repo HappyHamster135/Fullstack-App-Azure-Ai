@@ -1,0 +1,58 @@
+BASELINE SURVIVED failed=0 passed=80
+M01   KILLED    Prenumeration som förfaller exakt sista dagen i perioden tappas :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_IncludesAPaymentOnTheLastDayOfThePerio
+M02   KILLED    Periodens sista dag en dag för tidig :: failed=3 passed=77: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_IncludesAPaymentOnTheLastDayOfThePerio
+M03   KILLED    'Idag' i UTC i stället för svensk tid (den ursprungliga buggen) :: failed=7 passed=73: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_UsesSwedishSummerTime; SubTracker.Api.
+M04   KILLED    Kategorier med lika summa sorteras inte på namn :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_OrdersCategoriesWithEqualTotalsByName
+M05   KILLED    Betalningar med samma datum sorteras inte på namn :: failed=2 passed=78: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_SortsPaymentsByDateThenName; SubTracke
+M05b  KILLED    Namn jämförs med serverns kultur (ICU) i stället för ordinalt :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_SortsPaymentsOnTheSameDateTheSameWayOn
+M05c  SURVIVED  Ingen id-tie-breaker för betalningar (stabil sortering + id-ordning från databasen gör den ekvivalent) :: failed=0 passed=80
+M05d  SURVIVED  Ingen id-tie-breaker för kategorier (namnet är unikt per användare, så ekvivalent) :: failed=0 passed=80
+M06   KILLED    Inaktiva prenumerationer ingår :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_IgnoresInactiveSubscriptions
+M07   KILLED    Förfallna betalningar i innevarande månad ingår :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_CountsPaymentsFromTodayOnly_ButKeepsTh
+M08   KILLED    Servicens vakt mot months < 1 borttagen :: failed=1 passed=79: SubTracker.Api.Tests.ForecastServiceTests.GetAsync_RejectsMonthsOutsideTheSupportedRange
+M09   KILLED    Servicens vakt mot months > 24 borttagen :: failed=1 passed=79: SubTracker.Api.Tests.ForecastServiceTests.GetAsync_RejectsMonthsOutsideTheSupportedRange
+M10   KILLED    AsNoTracking borttaget :: failed=1 passed=79: SubTracker.Api.Tests.ForecastServiceTests.GetAsync_DoesNotTrackTheEntitiesItReads
+M11   KILLED    SubscriptionId alltid 0 :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_JsonShape_MatchesWhatTheFrontendReads
+M12   KILLED    Kategorins namn och färg ombytta :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_OrdersCategoriesWithEqualTotalsByName
+M13   KILLED    IntervalsBefore hoppar aldrig över något :: failed=2 passed=78: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M14   KILLED    Hoppar en vecka för mycket :: failed=4 passed=76: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M15   KILLED    Hoppar en månad för mycket :: failed=4 passed=76: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M16   KILLED    Hoppar ett kvartal för mycket :: failed=3 passed=77: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M17   KILLED    Hoppar ett år för mycket :: failed=3 passed=77: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M17b  SURVIVED  Kvartal avrundat uppåt (hoppar bara över månader före perioden) :: failed=0 passed=80
+M18   KILLED    Betalning exakt idag exkluderas :: failed=8 passed=72: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_CountsPaymentsFromTodayOnly_ButKeepsTh
+M19   KILLED    Betalning exakt sista dagen exkluderas :: failed=6 passed=74: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_IncludesAPaymentOnTheLastDayOfThePerio
+M20   KILLED    Maxgräns 25 i stället för 24 :: failed=2 passed=78: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_RejectsMonthsOutsideOneToTwentyFour_Wi
+M21   KILLED    Mingräns 0 i stället för 1 :: failed=2 passed=78: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_RejectsMonthsOutsideOneToTwentyFour_Wi
+M22   KILLED    Standard 12 månader :: failed=8 passed=72: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_ContainsOnlyTheCallersOwnSubscriptions
+M23   KILLED    Ingen autentisering på endpointen :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_RequiresAuthentication
+M24   KILLED    Bara största kategorin redovisas :: failed=2 passed=78: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_OrdersCategoriesWithEqualTotalsByName;
+M25   KILLED    Kategorisumma = största betalningen :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_SplitsMonthCostByCategory_LargestFirst
+M26   KILLED    Veckodatum glider en dag efter 40 veckor :: failed=2 passed=78: SubTracker.Api.Tests.SubscriptionPaymentDatesTests.MatchesTheReference_ForManyRandomSubscr
+M27   KILLED    Månadsdatum hoppar en månad efter 30 månader :: failed=3 passed=77: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M28   KILLED    Kvartal räknas som 2 månader :: failed=7 passed=73: SubTracker.Api.Tests.BillingIntervalExtensionsTests.IntervalsBefore_NeverSkipsAPaymentOnOr
+M29   KILLED    Ägarfiltret borttaget: alla användares prenumerationer ingår :: failed=12 passed=68: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_ContainsOnlyTheCallersOwnSubscription
+M30   KILLED    Månadens summa = största betalningen :: failed=14 passed=66: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_DefaultsToSixMonthsStartingWithTheCur
+M31   KILLED    Periodens total = största månaden :: failed=5 passed=75: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_ContainsOnlyTheCallersOwnSubscriptions
+N01   KILLED    Betalningslistan skickas alltid :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_OmitsThePaymentList_UnlessRequested
+N02   KILLED    Betalningslistan skickas aldrig :: failed=13 passed=67: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_CountsPaymentsFromTodayOnly_ButKeepsT
+N03   KILLED    Betalningslistan på som standard :: failed=1 passed=79: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_OmitsThePaymentList_UnlessRequested
+N04   KILLED    Controllern ignorerar includePayments :: failed=13 passed=67: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_CountsPaymentsFromTodayOnly_ButKeepsT
+N05   KILLED    Controllern ignorerar months :: failed=6 passed=74: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_JsonShape_MatchesWhatTheFrontendReads;
+N06   KILLED    Taket är 201 :: failed=1 passed=79: SubTracker.Api.Tests.SubscriptionLimitTests.CreatingMoreThanTheLimit_IsRejectedWithAClearM
+N07   KILLED    Taket off-by-one :: failed=1 passed=79: SubTracker.Api.Tests.SubscriptionLimitTests.CreatingMoreThanTheLimit_IsRejectedWithAClearM
+N08   KILLED    Taket borttaget :: failed=1 passed=79: SubTracker.Api.Tests.SubscriptionLimitTests.CreatingMoreThanTheLimit_IsRejectedWithAClearM
+N09   KILLED    Taket räknar alla användares prenumerationer :: failed=1 passed=79: SubTracker.Api.Tests.SubscriptionLimitTests.CreatingMoreThanTheLimit_IsRejectedWithAClearM
+N10   KILLED    Startdatum saknar övre gräns :: failed=2 passed=78: SubTracker.Api.Tests.SubscriptionDateValidationTests.StartDate_OutsideTheSupportedRange_Is
+N11   KILLED    Startdatum saknar nedre gräns :: failed=2 passed=78: SubTracker.Api.Tests.SubscriptionDateValidationTests.StartDate_OutsideTheSupportedRange_Is
+N12   KILLED    Nästa betalning saknar övre gräns :: failed=2 passed=78: SubTracker.Api.Tests.SubscriptionDateValidationTests.NextPaymentDate_OutsideTheSupportedRa
+N13   KILLED    Nedre gräns 1999 :: failed=7 passed=73: SubTracker.Api.Tests.SubscriptionDateValidationTests.NextPaymentDate_OutsideTheSupportedRa
+N14   KILLED    Övre gräns 2101 :: failed=7 passed=73: SubTracker.Api.Tests.SubscriptionDateValidationTests.NextPaymentDate_OutsideTheSupportedRa
+N15   KILLED    Fel tidszon i den riktiga klockan :: failed=3 passed=77: SubTracker.Api.Tests.SwedishTimeProviderTests.GetToday_IsTheSwedishDate; SubTracker.Api.Te
+N16   KILLED    Program.cs registrerar systemklockan :: failed=1 passed=79: SubTracker.Api.Tests.SwedishTimeProviderTests.ProgramRegistersTheSwedishTimeProvider
+N17   KILLED    Betalningens standarddatum i UTC :: failed=1 passed=79: SubTracker.Api.Tests.SwedishTimeTests.RegisterPayment_WithoutDate_UsesTheSwedishDate
+N18   KILLED    Dashboardens 'idag' i UTC :: failed=2 passed=78: SubTracker.Api.Tests.SwedishTimeTests.Dashboard_PaymentHistory_EndsInTheSwedishCurrentMont
+N19   KILLED    Prognosens 'idag' i UTC :: failed=18 passed=62: SubTracker.Api.Tests.ForecastEndpointTests.Forecast_ContainsOnlyTheCallersOwnSubscription
+N20   KILLED    Dashboardens fönster är 31 dagar :: failed=1 passed=79: SubTracker.Api.Tests.SwedishTimeTests.Dashboard_UpcomingWindow_StartsFromTheSwedishDate
+
+KILLED 52/55; överlevde 3 varav förväntat ekvivalenta 3; oväntade överlevare: []
